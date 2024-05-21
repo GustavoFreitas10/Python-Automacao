@@ -1,3 +1,81 @@
-Code python 
+# Criando uma automação de mensagens para grupos ou pessoas no seu whatsapp. 
+# Usando a funcionalidade nativa do WhatsApp de encaminhar mensagem.
 
-Adicionei uma outra linha 
+
+from selenium import webdriver # Importando selenium para realizar a automação 
+from selenium.webdriver.chrome.service import Service 
+from webdriver_manager.chrome import ChromeDriverManager 
+
+service = Service(ChromeDriverManager().install()) # Instalação do web driver para criar o navegador 
+nav = webdriver.Chrome(service=service) # Abrindo o Google Chrome 
+nav.get("https://web.whatsapp.com") # Abrindo a guia no seu navegador já com a tela do whatsappweb para escanear o QR code 
+
+from selenium.webdriver.common.keys import Keys #Importação de teclas 
+import pyperclip
+import time 
+
+mensagem = """Fala Galera!
+Seja bem vindo ao nosso grupo de Whatsapp!
+""" 
+
+lista_contatos = ["Meu Numero"] # adicione mais contatos, estou usando somente 1 pois n foi necessário usar mais contatos até o momento. 
+
+# Enviar mensagem para o meu numero primeiro para depois encaminhar para outros
+
+nav.find_element('xpath', '//*[@id="side"]/div[1]/div/div[2]/button/div[2]/span').click() # Clicar primeiro na lupa 
+nav.find_element('xpath','//*[@id="side"]/div[1]/div/div[2]/div[2]/div/div[1]/p').send_keys("Meu Numero") # Pesquisa automáticamente pelo meu numero (nesse caso) ou grupo no WhatsApp
+nav.find_element('xpath','//*[@id="side"]/div[1]/div/div[2]/div[2]/div/div[1]/p').send_keys(Keys.ENTER) 
+time.sleep(1.5)
+
+# Envia a mensagem automática 
+
+pyperclip.copy(mensagem)
+nav.find_element('xpath','//*[@id="main"]/footer/div[1]/div/span[2]/div/div[2]/div[1]/div/div[1]/p').send_keys(Keys.CONTROL + "v")
+nav.find_element('xpath','//*[@id="main"]/footer/div[1]/div/span[2]/div/div[2]/div[1]/div/div[1]/p').send_keys(Keys.ENTER)
+time.sleep(1.5)
+# Encaminhar mensagem para os contatos listados
+
+from selenium.webdriver.common.action_chains import ActionChains  # type: ignore
+
+
+qtde_contatos = len(lista_contatos)
+qtde_blocos = qtde_contatos / 5  # Calcula o número de blocos
+if qtde_contatos % 5 != 0:
+    qtde_blocos += 1  # Se o número de contatos não for um múltiplo de 5, adicione um bloco extra
+
+for i in range(int(qtde_blocos)):
+    # Rodar código para encaminhar
+    i_inicial = i * 5 
+    i_final = (i + 1) * 5 
+    lista_enviar = lista_contatos[i_inicial:i_final]
+
+    lista_elementos = nav.find_elements('class name', '_amk4') # Percorre a lista para identificar o texto da mensagem correta 
+    for item in lista_elementos: 
+        mensagem = mensagem.replace("\n", "")
+        texto = item.text.replace("\n", "")
+        if mensagem in texto: 
+            elemento = item 
+            
+    # Seleciona a mensagem para enviar e abre a caixa de encaminhar
+    ActionChains(nav).move_to_element(elemento).perform() # Passou o mouse em cima do elemento / Mensagem
+    elemento.find_element('class name', '_ahkm').click()
+    time.sleep(1.5)
+    nav.find_element('xpath','//*[@id="app"]/div/span[5]/div/ul/div/li[4]').click() # Clicou na Caixa de opções (Encaminhar,Favoritar,Reagir,Editar... etc)
+    nav.find_element('xpath','//*[@id="main"]/span[2]/div/button[5]/span').click() # Clicou para encaminhar a mensagem 
+    time.sleep(1.5)    
+
+    # Seleciona 5 contatos para enviar
+    for nome in lista_enviar:                                            
+        # busca o nome do contato 
+        nav.find_element('xpath','//*[@id="side"]/div[1]/div/div[2]/div[2]/div/div[1]/p').send_keys(nome)
+        time.sleep(1.5)
+        # Enter automático no contato selecionado 
+        nav.find_element('xpath','//*[@id="app"]/div/span[2]/div/div/div/div/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/p').send_keys(Keys.ENTER)
+        time.sleep(1.5)
+        # Apagar a Mensagem 
+        nav.find_element('xpath','//*[@id="app"]/div/span[2]/div/div/div/div/div/div/div/div[1]/div/div[2]/div[2]/div/div[1]/p').send_keys(Keys.BACKSPACE)
+        time.sleep(1.5)
+
+        nav.find_element('xpath','//*[@id="app"]/div/span[2]/div/div/div/div/div/div/div/span/div/div/div/span').click()
+        time.sleep(3)
+
